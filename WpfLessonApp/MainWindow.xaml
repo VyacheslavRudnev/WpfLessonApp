@@ -28,7 +28,7 @@
         </Grid.RowDefinitions>
         <ScrollViewer Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="3" VerticalScrollBarVisibility="Auto">
             <TextBlock x:Name="tb"
-                   Text="0"
+                   
                    Grid.Column="1"
                    Grid.ColumnSpan="3"
                    Grid.Row="1"

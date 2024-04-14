@@ -24,38 +24,51 @@ namespace WpfLessonApp
             InitializeComponent();
         }
 
-        //private async void bt_Click(object sender, RoutedEventArgs e)
-        //{
-
-        //    string filePath = "sys_004.txt";
-        //    try
-        //    {
-        //        string fileContent;
-        //        using (StreamReader sr = new StreamReader(filePath))
-        //        {
-        //            fileContent = await sr.ReadToEndAsync();                     
-        //        }
-        //        tb.Text = fileContent;
-        //    }
-        //    catch (FileNotFoundException)
-        //    {
-        //        MessageBox.Show("Файл не знайдено!");
-        //    }
-        //}
+       
         private async void bt_Click(object sender, RoutedEventArgs e)
         {
             string path = tbx.Text;
-            try
+            List<string> files = new List<string>();
+
+            tb.Text = "Починаємо перевірку файлів...\n";
+            
+            await Task.Run(() =>
             {
-                string filesList = await GetFoldersAsync(path);
-                tb.Text = filesList;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Помилка: {ex.Message}");
-            }
+                GetFoldersAsync(path, files);
+                Dispatcher.Invoke(() => tb.Text += $"{0}: {files.Count} {Environment.NewLine}");
+                Parallel.ForEach(files, (file) => ReadFile(file).Wait());
+
+
+            });
         }
-        private async Task<string> GetFoldersAsync(string path)
+
+        private void UpdateStatus(string status)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                tb.Text += status + "\n";
+            });
+        }
+        private async Task ReadFile(string path)
+        {
+            int count = 0;
+            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read))
+            {
+                using (StreamReader sr = new StreamReader(fs))
+                {
+                    while (!sr.EndOfStream)
+                    {
+                        string? text = await sr.ReadLineAsync();
+                        if (text != null && text.Contains(word))
+                        {
+                            count++;
+                        }
+                    }
+                }
+            }
+            Dispatcher.Invoke(() => tb.Text += $"{System.IO.Path.GetFileName(path)}:  {count}{Environment.NewLine}");
+        }
+        private async Task<string> GetFoldersAsync(string path, List<string> files)
         {
             try
             {
@@ -63,13 +76,12 @@ namespace WpfLessonApp
 
                 foreach (var file in Directory.EnumerateFiles(path))
                 {
-                    filesList.AppendLine(file);
+                    files.Add(file);
                 }
 
                 foreach (var folder in Directory.EnumerateDirectories(path))
                 {
-                    string subFolderFiles = await GetFoldersAsync(folder);
-                    filesList.AppendLine(subFolderFiles);
+                    GetFoldersAsync(folder, files);
                 }
 
                 return filesList.ToString();
